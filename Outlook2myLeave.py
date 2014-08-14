@@ -7,14 +7,15 @@ import selenium #Web control
 import getpass #allows password input securly in cmd
 import numpy as np
 from tkinter import * #Gui
+from win32api import *
 
-
+print(GetDomainName())
 ##Experiment with tkinter
 #l = tkinter.Label(text = "See me?")
 #l.pack()
 #l.mainloop()
 
-master = Tk()
+#master = Tk()
 
 #f = Frame(master, height=32, width=32)
 ##f.pack_propagate(0) # don't shrink
@@ -30,12 +31,12 @@ master = Tk()
 
 #Checkboxes
 
-var = IntVar()
+#var = IntVar()
 
-c = Checkbutton(master, text="Expand", variable=var)
-c.pack()
+#c = Checkbutton(master, text="Expand", variable=var)
+#c.pack()
 
-mainloop()
+#mainloop()
 
 #Radiobuttons
 #v = IntVar()
@@ -117,16 +118,51 @@ print(workTimeCut)
 
 #TIME TO FIGURE BLANK TIME MOTHERFUCKER
 date = begin + datetime.timedelta(days = 1) #Set date to Monday of whatever week it is
+blankTime = np.zeros((100, 8)) #Create new blankTime 2d array 100 long by 8 wide
+o = 0 #Count number of blankTime events
 for i in range(0, 1): #5Iterate From monday through friday, loop runs on friday on last loop then iterates to saturday and quits
     print("Loop number is", i)
     print("Loop day is", date.day)
-    j = 30 #Increments of 15 minutes. Each j is 15 minutes. This sets j to 7:30 AM
-    while (j <= 66): #While j is less than 4:30 PM
+    j = 32 #Increments of 15 minutes. Each j is 15 minutes. This sets j to 8:00 AM
+    counting = False #Records if blankTime is being counted currently
+    while (j <= 68): #While j is less than 5:00 PM
         print("Hour is", int(j/4))
         print("Minute is", (j%4)*15)
-        #print(j/4)
+        #Find blank time by running through day in 15 minute block and comparing with offTime and workTime to see if current 15 minute block is laready occupied
+        blank = True
+        for k in range(0, len(offTimeCut)): #Search through offTimeCut list in search of time that is blank
+            if (offTimeCut[k][1] == date.day): #Start time is the same as current day being evaluated
+                if ((((offTimeCut[k][2])*4) + (int((offTimeCut[k][3])/4))) <= j):
+                    if ((((offTimeCut[k][6])*4) + (int((offTimeCut[k][7])/4))) > j):
+                            blank = False
+            if (workTimeCut[k][1] == date.day): #Start time is the same as current day being evaluated
+                if ((((workTimeCut[k][2])*4) + (int((workTimeCut[k][3])/4))) <= j):
+                    if ((((workTimeCut[k][6])*4) + (int((workTimeCut[k][7])/4))) > j):
+                            blank = False
+
+
+        print("blankTime", blank) #Test
+
+        if ((blank == True) and (counting == False)): #If current time is beginning of blank time
+            startTime = j #Record the start of this free time
+            counting = True #Record that free time is being counted already
+        if ((blank == False) and (counting == True)): #If current time is end of blank time
+            #Record blankTime
+            blankTime[o][0] = date.month #Start month
+            blankTime[o][1] = date.day #Start day
+            blankTime[o][2] = int(startTime/4) #Start hour
+            blankTime[o][3] = (startTime%4)*15 #Start minute
+            blankTime[o][4] = date.month #End month
+            blankTime[o][5] = date.day #End day
+            blankTime[o][6] = int(j/4) #End hour
+            blankTime[o][7] = (j%4)*15 #End minute
+            o = o + 1 #Iterate event counter
+            counting = False
         j = j + 1
     date = date + datetime.timedelta(days = 1) #Iterate through days
+
+blankTimeCut = np.zeros((o, 8)) #Create new 2d array the size of the input data
+blankTimeCut[:][:] = blankTime[:o][:] #Cut and paste old array into new array
 
 print("Day after loop", date.day)
 
@@ -140,6 +176,8 @@ for i in range(0, w):
     if (workTimeCut[i][6] == 30): #If end time is half hour, add time
         hoursWorked = hoursWorked+.5
 print("Hours worked is", hoursWorked)
+print("Should be 30.5 with current blank time")
+print("Blank time cut", blankTimeCut)
 
 
 ##Experiment w/ selenium
